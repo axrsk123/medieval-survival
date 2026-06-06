@@ -1,0 +1,64 @@
+🗺️ Ako funguje pripojenie na tvoj PC (LAN)
+Tvoj počítač je v domácej sieti (Wi-Fi alebo kábel) označený číselným kódom – Lokálnou IP adresou (najčastejšie vyzerá ako 192.168.1.XX alebo 10.0.0.XX).
+
+Keď kamošom alebo ocinovi povieš túto adresu, ich počítače budú presne vedieť, kam majú cez router poslať dáta z hry, aby dorazili do tvojho čierneho okna so serverom.
+
+🛠️ NÁVOD: Ako spustiť multiplayer pre druhého hráča
+Urobte spolu tieto 3 jednoduché kroky a môžete hneď hrať:
+
+KROK 1: Zisti svoju lokálnu IP adresu
+Musíme zistiť, aké číslo dal tvojmu počítaču domáci router.
+
+Na tvojom počítači (kde beží server) stlač klávesovú skratku Windows + R.
+
+Do malého okienka, ktoré vyskočí, napíš cmd a stlač Enter.
+
+Otvorí sa ti nové čierne okno (klasický príkazový riadok). Napíš tam tento príkaz a stlač Enter:
+
+Bash
+ipconfig
+V tom texte, čo sa vypíše, pohľadaj riadok s názvom IPv4 Address (bude to v sekcii Wireless LAN adapter ak si na Wi-Fi, alebo Ethernet adapter ak si na kábli).
+
+Uvidíš tam číslo, napríklad: 192.168.1.55 (toto číslo si zapamätaj, je to adresa tvojho PC).
+
+KROK 2: Prepíš adresu v code.js (Na oboch PC!)
+Teraz musíme hre povedať, aby sa pripájala na toto konkrétne číslo a nie na lokálny počítač.
+
+Otvor si súbor code.js u seba.
+
+Hneď na začiatku sekcie 1. SIEŤ A SERVER (okolo riadku 33) nájdi tento riadok:
+
+JavaScript
+var socket = new WebSocket('ws://localhost:8080');
+Prepíš slovo localhost na tvoju zistenú IP adresu z Kroku 1. Bude to vyzerať presne takto:
+
+JavaScript
+var socket = new WebSocket('ws://192.168.1.55:8080');
+(Pozor: Daj tam tvoje skutočné číslo, nie toto vzorové!)
+
+Súbor ulož (Ctrl + S).
+
+DÔLEŽITÉ: Presne tento istý upravený priečinok s hrou (kde je v code.js už napísaná tvoja IP adresa) skopíruj ocinovi alebo kamošovi do jeho počítača (napríklad cez USB kľúč, Discord alebo zdieľaný priečinok).
+
+KROK 3: Vypnutie brány Firewall (Ak by spojenie nechcelo naskočiť)
+Windows má v sebe zabudovaného strážcu (Firewall), ktorý niekedy zo strachu zablokuje cudzí počítač, ak sa pokúša pripojiť k tvojmu Node.js serveru. Ak sa ocino nebude vedieť prihlásiť, musíte Firewall na tvojom PC na chvíľu vypnúť alebo v ňom povoliť port 8080.
+
+Najrýchlejšie vypnutie pre test hry:
+
+Klikni na štart, napíš Brána Windows Defender Firewall (Windows Defender Firewall) a otvor ju.
+
+Vľavo klikni na Zapnúť alebo vypnúť bránu Windows Defender Firewall.
+
+Pre privátne aj verejné siete klikni na Vypnúť bránu (červený štít) a daj OK.
+(Po dohraní hry ju môžeš rovnakým spôsobom znova zapnúť).
+
+⚔️ Ideme do boja!
+Teraz je všetko pripravené:
+
+Na tvojom PC naštartuj server cez node server.js a nechaj okno bežať.
+
+Ty si otvor game.html v Opere GX, stlač Ctrl + F5 a prihlás sa ako AXRSK123.
+
+Ocino si na svojom PC otvorí game.html vo svojom prehliadači, stlačí Ctrl + F5, klikne najprv na REGISTER (vytvorí si napr. účet OCINO s heslom 1234) a potom klikne na LOGIN.
+
+V tej sekunde ho server pustí na mapu, tvoj prehliadač od servera prijme jeho súradnice a uvidíš ho ako modrého rytiera behať vedľa seba v tvojom svete!

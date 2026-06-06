@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Medieval Multiplayer Survival</title>
+    <style>
+        * { box-sizing: border-box; }
+        body, html {
+            margin: 0; padding: 0; overflow: hidden;
+            background-color: #111;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        canvas { display: block; width: 100vw; height: 100vh; }
+        
+        /* Registračné a prihlasovacie menu */
+        #login-screen {
+            position: absolute; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(15, 15, 15, 0.95);
+            display: flex; justify-content: center; align-items: center; z-index: 999;
+        }
+        .login-box {
+            background: #222; padding: 40px; border-radius: 12px;
+            border: 3px solid #cca300; text-align: center; color: white; min-width: 320px;
+        }
+        .login-box h2 { margin-top: 0; color: #cca300; letter-spacing: 2px; }
+        .login-box input {
+            width: 100%; padding: 12px; margin: 10px 0;
+            background: #111; border: 2px solid #555; color: white; border-radius: 6px; font-size: 16px;
+        }
+        .login-box button {
+            color: white; border: none; padding: 12px 20px;
+            font-weight: bold; border-radius: 6px; cursor: pointer; width: 100%; font-size: 16px;
+            transition: opacity 0.2s;
+        }
+        .login-box button:hover { opacity: 0.9; }
+
+        /* Vrchné ľavé UI (Súradnice) */
+        #ui-layer {
+            position: absolute; top: 20px; left: 20px;
+            color: white; text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+            pointer-events: none; user-select: none; z-index: 10;
+        }
+        h1 { margin: 0 0 5px 0; font-size: 24px; }
+        p { margin: 0; font-size: 14px; opacity: 0.8; }
+
+        /* Vrchné pravé UI (Suroviny a hlad) */
+        #stat-hud {
+            position: absolute; top: 20px; right: 20px;
+            background: rgba(0, 0, 0, 0.75); padding: 15px; border-radius: 8px;
+            border: 2px solid #cca300; color: white; min-width: 200px; user-select: none;
+            display: flex; flex-direction: column; gap: 6px; z-index: 10;
+        }
+        .hud-line { font-size: 16px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
+        .hunger-bar-bg { width: 80px; height: 12px; background: #333; border-radius: 3px; border: 1px solid #555; overflow: hidden; }
+        .hunger-bar-fill { width: 100%; height: 100%; background: #ff5722; }
+
+        .hud-btn {
+            color: #111; border: none; padding: 8px;
+            font-weight: bold; border-radius: 4px; cursor: pointer; margin-top: 5px;
+            transition: background 0.2s; width: 100%; text-align: center;
+        }
+        #shop-toggle-btn { background: #cca300; }
+        #shop-toggle-btn:hover { background: #ffe066; }
+        #logout-btn { background: #8a2323; color: white; font-size: 11px; padding: 4px; margin-top: 2px; opacity: 0.8; }
+
+        /* Kráľovský obchod (Wardrobe) */
+        #cosmetic-shop {
+            display: none; position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%); background: rgba(20, 20, 20, 0.98);
+            padding: 25px; border-radius: 16px; border: 3px solid #cca300;
+            color: white; width: 650px; height: 480px; user-select: none; z-index: 100;
+            box-shadow: 0 0 50px rgba(0,0,0,0.9);
+        }
+        .shop-container { display: flex; width: 100%; height: 88%; gap: 20px; margin-top: 15px; }
+        .shop-list { flex: 1; overflow-y: auto; padding-right: 5px; display: flex; flex-direction: column; gap: 8px; }
+        
+        .shop-item {
+            display: flex; justify-content: space-between; align-items: center;
+            background: #2a2a2a; padding: 12px; border-radius: 6px; border: 1px solid #444;
+            cursor: pointer; transition: background 0.2s;
+        }
+        .shop-item:hover { background: #3a3a3a; border-color: #cca300; }
+        
+        .shop-preview-box {
+            width: 240px; background: #111; border-radius: 8px; border: 2px solid #555;
+            display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: 15px;
+        }
+        #previewCanvas { 
+            background: #1a261a; border-radius: 6px; border: 1px solid #333; 
+            width: 160px; height: 160px; display: block;
+        }
+        
+        .color-picker-section { width: 100%; text-align: center; margin-top: 5px; }
+        .color-picker-label { font-size: 11px; color: #aaa; text-transform: uppercase; margin-bottom: 4px; display: block;}
+        #cosmetic-color-input { width: 100%; height: 30px; background: none; border: none; cursor: pointer; }
+        .buy-btn { background: #4caf50; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 13px; }
+
+        /* Quest Tracker */
+        #quest-box {
+            position: absolute; bottom: 20px; left: 20px;
+            background: rgba(0, 0, 0, 0.6); padding: 12px; border-radius: 6px;
+            border-left: 4px solid #00bcd4; color: white; font-size: 14px; min-width: 220px; z-index: 10;
+        }
+
+        /* Hackerská Admin Konzola */
+        #owner-menu {
+            display: none; position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%); background: rgba(10, 10, 10, 0.98);
+            padding: 25px; border-radius: 10px; border: 2px solid #ff3333;
+            color: #ff3333; font-family: 'Courier New', monospace; width: 350px; z-index: 1000;
+            box-shadow: 0 0 40px rgba(255,0,0,0.4);
+        }
+        #owner-menu h3 { margin-top: 0; text-align: center; border-bottom: 1px solid #ff3333; padding-bottom: 5px; }
+        .cheat-btn {
+            background: #1a1a1a; color: #ff3333; border: 1px solid #ff3333;
+            padding: 10px; margin: 6px 0; width: 100%; cursor: pointer; text-align: left;
+            font-weight: bold; font-family: 'Courier New', monospace;
+        }
+        .cheat-btn:hover { background: #331111; }
+    </style>
+</head>
+<body>
+
+    <div id="login-screen">
+        <div class="login-box">
+            <h2 id="login-title">MEDIEVAL REALM</h2>
+            <p id="login-subtitle">Sign in or create a new warrior</p>
+            
+            <input type="text" id="username-input" placeholder="Character Name" maxlength="14" autocomplete="off">
+            <input type="password" id="password-input" placeholder="Account Password" autocomplete="off">
+            
+            <div style="display: flex; gap: 10px; margin-top: 15px;">
+                <button id="login-btn" type="button" style="background: #2b5797;">LOGIN</button>
+                <button id="register-btn" type="button" style="background: #4caf50;">REGISTER</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="stat-hud">
+        <div style="font-size: 11px; opacity: 0.6; text-align: center;">WARRIOR METRICS</div>
+        <div class="hud-line" style="color: #ff5722;">🍖 Hunger: <div class="hunger-bar-bg"><div id="hud-hunger" class="hunger-bar-fill"></div></div></div>
+        <div class="hud-line" style="color: #a67c52;">🪵 Wood: <span id="inv-wood">0</span></div>
+        <div class="hud-line" style="color: #ffd700;">🪙 Gold: <span id="inv-gold">0</span></div>
+        <div class="hud-line" style="color: #ff5252;">🥩 Meat: <span id="inv-meat">0</span></div>
+        <div class="hud-line" style="color: #e0e0e0; font-size: 13px;">🛡️ Armor: <span id="hud-cosmetic">NONE</span></div>
+        <button id="shop-toggle-btn" class="hud-btn" onclick="toggleShopUi()">🛒 WARDROBE VAULT</button>
+        <button id="logout-btn" class="hud-btn" onclick="forceLogout()">❌ RESET ACCOUNT</button>
+    </div>
+
+    <div id="cosmetic-shop">
+        <h2 style="margin:0; text-align:center; font-size:22px; letter-spacing:1px; color:#cca300;">🛡️ THE ROYAL SMITHY 🛡️</h2>
+        <div class="shop-container">
+            <div class="shop-list">
+                <div class="shop-item" onclick="selectShopItem('round_shield')"><span>🛡️ Knight Round Shield</span><button class="buy-btn">40g</button></div>
+                <div class="shop-item" onclick="selectShopItem('kite_shield')"><span>📐 Crusader Kite Shield</span><button class="buy-btn">40g</button></div>
+                <div class="shop-item" onclick="selectShopItem('spikes')"><span>🔥 Berserker Shoulder Spikes</span><button class="buy-btn">40g</button></div>
+                <div class="shop-item" onclick="selectShopItem('cape')"><span>🧣 Monarch Royal Cape</span><button class="buy-btn">40g</button></div>
+                <div class="shop-item" onclick="selectShopItem('horns')"><span>😈 Warlord Great Horns</span><button class="buy-btn">40g</button></div>
+            </div>
+            <div class="shop-preview-box">
+                <div style="font-size:12px; color:#aaa; margin-bottom:5px; font-weight:bold;">LIVE MIRROR PREVIEW</div>
+                <canvas id="previewCanvas"></canvas>
+                
+                <div class="color-picker-section">
+                    <label class="color-picker-label">🎨 Armor Paint Dye</label>
+                    <input type="color" id="cosmetic-color-input" value="#ff2222" onchange="updateCosmeticColor(this.value)">
+                </div>
+                
+                <button class="hud-btn" style="background:#555; color:white; font-size:12px; margin-top:10px; padding:6px;" onclick="toggleShopUi()">CLOSE VAULT</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="ui-layer">
+        <h1 id="player-title">MEDIEVAL SURVIVAL</h1>
+        <p>WASD: Move | Left Click: Attack | E: Eat Meat</p>
+        <p>Coordinates: <span id="coords">X: 2000, Y: 2000</span></p>
+    </div>
+
+    <div id="quest-box">
+        <div style="font-weight: bold; color: #00bcd4; margin-bottom: 4px;">🎯 ACTIVE QUESTS</div>
+        <div id="quest-boars">⚔️ Hunt Boars: <span id="q-boars-count">0/3</span></div>
+        <div id="quest-gold">💰 Gather Gold: <span id="q-gold-count">0/50</span></div>
+    </div>
+
+    <div id="owner-menu">
+        <h3>⚡ MATRIX OWNER CONSOLE ⚡</h3>
+        <p style="font-size: 11px; color: #888; text-align: center; margin-bottom: 10px;">PRESS 'P' TO OPEN/CLOSE</p>
+        
+        <button class="cheat-btn" onclick="toggleCheat('god')">🛡️ TOGGLE IMMORTALITY</button>
+        <button class="cheat-btn" onclick="toggleCheat('speed')">⚡ TOGGLE OVERCLOCK SPEED</button>
+        <button class="cheat-btn" onclick="toggleCheat('resources')">💵 INJECT +50,000 ALL RES</button>
+        <button class="cheat-btn" id="mind-control-btn" onclick="toggleCheat('mindcontrol')" style="color: #00bcd4; border-color: #00bcd4;">🧠 TOGGLE MIND CONTROL</button>
+        
+        <button class="cheat-btn" style="color:#aaa; border-color:#aaa; text-align:center; margin-top: 15px;" onclick="document.getElementById('owner-menu').style.display='none'">CLOSE</button>
+    </div>
+
+    <canvas id="gameCanvas"></canvas>
+    
+   <canvas id="gameCanvas"></canvas>
+    
+    <script src="config.js?v=99"></script>
+    <script src="helpers.js?v=99"></script>
+    <script src="code.js?v=99"></script>
+</body>
+</html>
